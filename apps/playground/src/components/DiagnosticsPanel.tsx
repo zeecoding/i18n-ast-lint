@@ -308,5 +308,11 @@ function DiagnosticBadge({ type }: { type: Diagnostic["type"] }) {
           DYNAMIC_PROTECTED
         </span>
       );
+    case "UNRESOLVED_KEY":
+      return (
+        <span className="rounded-[4px] border border-[#F59E0B]/45 bg-[#451A03]/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#FCD34D]">
+          UNRESOLVED_KEY
+        </span>
+      );
   }
 }

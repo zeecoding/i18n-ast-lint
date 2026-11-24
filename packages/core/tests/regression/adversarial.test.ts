@@ -5,7 +5,7 @@ import {
   scanSource,
 } from "../../src/index.js";
 
-describe("Adversarial Regression Suite (TRD Section 6)", () => {
+describe("Adversarial Regression Suite (TRD Section 6 + Real-World Edge Cases)", () => {
   it("1. Issue #34 (JSX <Trans>): extracts multi-line <Trans> with nested HTML and JSX expression attributes with zero false positives", () => {
     const code = `
       import React from "react";
@@ -242,5 +242,101 @@ describe("Adversarial Regression Suite (TRD Section 6)", () => {
         "}",
       ].join("\n")
     );
+  });
+
+  it("8. Real-World Patterns: keyPrefix, lexical constants, ternaries, fallback arrays, next-intl t.rich/markup/raw, i18next context, defineMessages, and non-i18n .t() immunity", () => {
+    const code = `
+      import { useTranslation } from "react-i18next";
+      import { useTranslations, getTranslations } from "next-intl";
+      import { defineMessages } from "react-intl";
+
+      const MENU_HOME = "menu.home";
+      const KEYS = {
+        PROFILE: "menu.profile",
+      } as const;
+
+      const messages = defineMessages({
+        title: { id: "page.title", defaultMessage: "Welcome" },
+      });
+
+      export async function ComplexView({ isAdmin }: { isAdmin: boolean }) {
+        const { t } = useTranslation("auth", { keyPrefix: "form" });
+        const tHome = useTranslations("Home");
+        const tAbout = await getTranslations({ locale: "en", namespace: "About" });
+
+        // Unrelated object with .t() method must NOT be extracted
+        const anim = gsap.t("not.a.translation.key");
+
+        return (
+          <div>
+            {t("email")}
+            {i18n.t(MENU_HOME)}
+            {i18n.t(KEYS.PROFILE)}
+            {i18n.t(isAdmin ? "role.admin" : "role.user")}
+            {i18n.t(["err.specific", "err.generic"])}
+            {tHome.rich("intro")}
+            {tHome.markup("note")}
+            {tHome.raw("data")}
+            {tAbout("headline")}
+            {i18n.t("friend", { context: "male" })}
+          </div>
+        );
+      }
+    `;
+
+    const extracted = scanSource(code, "src/ComplexView.tsx");
+    const keys = extracted.map((k) => k.key);
+
+    expect(keys).toEqual([
+      "page.title",
+      "auth.form.email",
+      "menu.home",
+      "menu.profile",
+      "role.admin",
+      "role.user",
+      "err.specific",
+      "err.generic",
+      "Home.intro",
+      "Home.note",
+      "Home.data",
+      "About.headline",
+      "friend",
+    ]);
+    expect(extracted.find((k) => k.key === "friend")?.context).toBe("male");
+    expect(keys).not.toContain("not.a.translation.key");
+  });
+
+  it("9. Unresolved Dynamic Argument Safety: emits UNRESOLVED_KEY warning when t(dynamicVar) cannot be resolved statically, and protects bound namespace", () => {
+    const scopedCode = `
+      import { useTranslation } from "react-i18next";
+      export function DynamicComp({ dynamicKey }: { dynamicKey: string }) {
+        const { t } = useTranslation("auth");
+        return <span>{t(dynamicKey)}</span>;
+      }
+    `;
+
+    const extractedScoped = scanSource(scopedCode, "src/DynamicComp.tsx");
+    expect(extractedScoped).toHaveLength(1);
+    expect(extractedScoped[0]).toMatchObject({
+      key: "auth.",
+      rawKey: "dynamicKey",
+      isDynamicPrefix: true,
+      isUnresolved: true,
+    });
+
+    const report = analyzeProject(extractedScoped, {
+      en: JSON.stringify({
+        auth: { login: "Sign in" },
+        other: { dead: "Remove me" },
+      }),
+    });
+
+    // auth.login is protected by the scoped namespace; other.dead is flagged unused; UNRESOLVED_KEY warning is emitted
+    expect(
+      report.diagnostics.filter((d) => d.type === "UNRESOLVED_KEY")
+    ).toHaveLength(1);
+    expect(
+      report.diagnostics.filter((d) => d.type === "UNUSED_KEY").map((d) => d.key)
+    ).toEqual(["other.dead"]);
   });
 });

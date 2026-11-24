@@ -58,6 +58,7 @@ export interface RunFixResult {
   report: LintReport;
   modifiedFiles: RunFixFileChange[];
   totalRemovedKeys: number;
+  blockedByUnresolved: boolean;
 }
 
 /**
@@ -103,11 +104,13 @@ export async function runCheck(
 
 /**
  * Runs dead-key pruning across all locale files in `cwd`.
- * Strips each file's namespace prefix before calling `pruneUnusedKeys()` on namespaced locale files.
+ * - Strips each file's namespace prefix before calling `pruneUnusedKeys()` on namespaced locale files.
+ * - Safety Guard: If any unscoped `UNRESOLVED_KEY` expression exists (e.g. `t(dynamicUnknownVar)` with no namespace bound),
+ *   refuses to prune unless `overrides.force` is true so active keys are never accidentally deleted.
  */
 export async function runFix(
   cwd: string,
-  overrides?: CliFlagOverrides & { dryRun?: boolean }
+  overrides?: CliFlagOverrides & { dryRun?: boolean; force?: boolean }
 ): Promise<RunFixResult> {
   const startTime = Date.now();
   const config = await resolveConfig(cwd, overrides);
@@ -128,6 +131,20 @@ export async function runFix(
     durationMs,
     localeFilePaths: workspace.localeFilePaths,
   });
+
+  const hasUnscopedUnresolved = extractedKeys.some(
+    (k) => k.isUnresolved && !k.isDynamicPrefix
+  );
+
+  if (hasUnscopedUnresolved && !overrides?.force) {
+    return {
+      config,
+      report,
+      modifiedFiles: [],
+      totalRemovedKeys: 0,
+      blockedByUnresolved: true,
+    };
+  }
 
   // Group UNUSED_KEY diagnostics by locale
   const unusedByLocale = new Map<string, string[]>();
@@ -180,5 +197,6 @@ export async function runFix(
     report,
     modifiedFiles,
     totalRemovedKeys,
+    blockedByUnresolved: false,
   };
 }

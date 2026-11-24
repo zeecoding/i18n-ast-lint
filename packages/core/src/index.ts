@@ -13,7 +13,12 @@ export {
 } from "./types.js";
 
 export { inferScriptKind, scanSource } from "./ast/scanner.js";
-export { ScopeTracker, type ScopeBinding, type TranslationFnKind } from "./ast/scope.js";
+export {
+  ScopeTracker,
+  combineNsAndKeyPrefix,
+  type ScopeBinding,
+  type TranslationFnKind,
+} from "./ast/scope.js";
 export {
   extractFromCallExpression,
   extractFromJsxElement,

@@ -64,15 +64,15 @@ export function scanSource(
     if (ts.isVariableDeclaration(node)) {
       scope.inspectVariableDeclaration(node);
     } else if (ts.isCallExpression(node)) {
-      const hit = extractFromCallExpression(
+      const hits = extractFromCallExpression(
         node,
         sourceFile,
         filePath,
         scope,
         resolvedOptions
       );
-      if (hit) {
-        extracted.push(hit);
+      if (hits.length > 0) {
+        extracted.push(...hits);
       }
     } else if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const hit = extractFromJsxElement(

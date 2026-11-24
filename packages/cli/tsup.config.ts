@@ -4,7 +4,9 @@ export default defineConfig([
   {
     entry: ["src/index.ts"],
     format: ["esm", "cjs"],
-    dts: true,
+    dts: {
+      resolve: ["@locale-lint/core"],
+    },
     clean: true,
     treeshake: true,
     sourcemap: true,

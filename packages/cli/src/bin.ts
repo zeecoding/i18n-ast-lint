@@ -15,6 +15,7 @@ interface CheckCliOptions {
 
 interface FixCliOptions {
   dryRun?: boolean;
+  force?: boolean;
   json?: boolean;
   config?: string;
   locales?: string;
@@ -61,6 +62,7 @@ export async function runCli(argv = process.argv): Promise<number> {
   cli
     .command("fix", "Format-preserving removal of unused keys from locale JSON files")
     .option("--dry-run", "Preview unused keys that would be removed without writing files")
+    .option("--force", "Prune unused keys even when unresolved dynamic t(expr) calls exist")
     .option("--json", "Output JSON summary of pruned keys and files")
     .option("--config <path>", "Path to i18n-ast-lint config file (.json, .mjs, .js)")
     .option("--locales <dir>", "Path to locales directory")
@@ -74,13 +76,50 @@ export async function runCli(argv = process.argv): Promise<number> {
           srcDir: options.src,
           baseLocale: options.base,
           dryRun: options.dryRun,
+          force: options.force,
         });
+
+        if (result.blockedByUnresolved) {
+          const unresolved = result.report.diagnostics.filter(
+            (d) => d.type === "UNRESOLVED_KEY"
+          );
+          if (options.json) {
+            process.stdout.write(
+              `${JSON.stringify(
+                {
+                  blockedByUnresolved: true,
+                  unresolvedCalls: unresolved,
+                  totalRemovedKeys: 0,
+                  modifiedFiles: [],
+                },
+                null,
+                2
+              )}\n`
+            );
+          } else {
+            process.stderr.write(
+              `Aborted fix: found ${unresolved.length} unresolved dynamic translation call(s) that could not be statically analyzed:\n`
+            );
+            for (const u of unresolved) {
+              const loc = u.location
+                ? ` (${u.location.filePath}:${u.location.line}:${u.location.column})`
+                : "";
+              process.stderr.write(`  - t(${u.key})${loc}\n`);
+            }
+            process.stderr.write(
+              `Pass --force to prune unused keys anyway, or use a template prefix like t(\`prefix.\${key}\`).\n`
+            );
+          }
+          exitCode = 1;
+          return;
+        }
 
         if (options.json) {
           process.stdout.write(
             `${JSON.stringify(
               {
                 dryRun: Boolean(options.dryRun),
+                blockedByUnresolved: false,
                 totalRemovedKeys: result.totalRemovedKeys,
                 modifiedFiles: result.modifiedFiles.map((f) => ({
                   filePath: f.filePath,

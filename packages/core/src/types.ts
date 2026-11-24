@@ -36,6 +36,8 @@ export interface ExtractedKey {
   key: string;                        // Fully resolved key (namespace + key)
   rawKey: string;                     // Raw literal written in source
   isDynamicPrefix: boolean;           // True for template literals like `errors.${code}`
+  isUnresolved?: boolean;             // True when a t(expr) call could not be statically resolved
+  context?: string;                   // i18next context value (e.g. "male", or "*" when dynamic)
   filePath: string;
   line: number;                       // 1-indexed
   column: number;                     // 1-indexed
@@ -45,7 +47,8 @@ export type DiagnosticType =
   | "UNUSED_KEY"
   | "MISSING_KEY"
   | "INTERPOLATION_MISMATCH"
-  | "DYNAMIC_KEY_DETECTED";
+  | "DYNAMIC_KEY_DETECTED"
+  | "UNRESOLVED_KEY";
 
 export type DiagnosticSeverity = "error" | "warning" | "info";
 
@@ -72,6 +75,7 @@ export interface LintReport {
     missingCount: number;
     mismatchCount: number;
     dynamicCount: number;
+    unresolvedCount?: number;
     durationMs: number;
   };
   diagnostics: Diagnostic[];

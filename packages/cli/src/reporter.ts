@@ -40,6 +40,10 @@ export function formatTerminalReport(
     return lines.join("\n");
   }
 
+  const unresolvedItems = report.diagnostics.filter(
+    (d) => d.type === "UNRESOLVED_KEY"
+  );
+
   const groups: Array<{
     title: string;
     items: Diagnostic[];
@@ -58,6 +62,11 @@ export function formatTerminalReport(
     {
       title: `UNUSED KEYS (${report.summary.unusedCount})`,
       items: report.diagnostics.filter((d) => d.type === "UNUSED_KEY"),
+      color: ANSI.yellow,
+    },
+    {
+      title: `UNRESOLVED DYNAMIC CALLS (${unresolvedItems.length})`,
+      items: unresolvedItems,
       color: ANSI.yellow,
     },
     {

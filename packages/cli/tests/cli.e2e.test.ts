@@ -223,4 +223,45 @@ describe("CLI End-to-End Suite (Issues #35 & #43, Namespaced Pruning, Exit Codes
     expect(badConfigRes.exitCode).toBe(2);
     expect(badConfigRes.stderr).toContain("Config file not found");
   });
+
+  it("refuses to prune in fix mode when an unscoped unresolved t(dynamicVar) call exists unless --force is passed", async () => {
+    const repoDir = await createTempFixture("unresolved-safety");
+    await mkdir(join(repoDir, "src"), { recursive: true });
+    await mkdir(join(repoDir, "locales"), { recursive: true });
+
+    await writeFile(
+      join(repoDir, "src", "Dynamic.tsx"),
+      `
+      export function Dynamic({ someExternalKey }: { someExternalKey: string }) {
+        return <div>{t(someExternalKey)}</div>;
+      }
+      `
+    );
+
+    const initialEn = JSON.stringify(
+      {
+        menu: {
+          home: "Home",
+        },
+      },
+      null,
+      2
+    );
+    await writeFile(join(repoDir, "locales", "en.json"), initialEn);
+
+    // 1. Running `fix` without `--force` aborts with exit code 1 and leaves en.json untouched
+    const blockedFix = await execCli(["fix"], repoDir);
+    expect(blockedFix.exitCode).toBe(1);
+    expect(blockedFix.stderr).toContain("Aborted fix");
+    expect(blockedFix.stderr).toContain("t(someExternalKey)");
+
+    const enAfterBlocked = await readFile(join(repoDir, "locales", "en.json"), "utf8");
+    expect(enAfterBlocked).toBe(initialEn);
+
+    // 2. Running `fix --force` overrides the guard and prunes
+    const forcedFix = await execCli(["fix", "--force"], repoDir);
+    expect(forcedFix.exitCode).toBe(0);
+    const enAfterForced = await readFile(join(repoDir, "locales", "en.json"), "utf8");
+    expect(enAfterForced).toBe("{}");
+  });
 });

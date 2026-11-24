@@ -24,7 +24,7 @@ export interface AnalyzeMeta {
 
 /**
  * Compares extracted source translation keys against all discovered locale JSON files
- * and emits structured diagnostics (`UNUSED_KEY`, `MISSING_KEY`, `INTERPOLATION_MISMATCH`, `DYNAMIC_KEY_DETECTED`).
+ * and emits structured diagnostics (`UNUSED_KEY`, `MISSING_KEY`, `INTERPOLATION_MISMATCH`, `DYNAMIC_KEY_DETECTED`, `UNRESOLVED_KEY`).
  */
 export function analyzeProject(
   extractedKeys: ExtractedKey[],
@@ -37,8 +37,9 @@ export function analyzeProject(
   const localeCodes = Object.keys(locales).sort();
   const baseLocale = resolveBaseLocale(mergedConfig.baseLocale, localeCodes);
 
-  // 1. Separate static keys and dynamic prefixes
+  // 1. Separate static keys, dynamic prefixes, and unresolved dynamic calls
   const usedKeys = new Set<string>();
+  const protectedContextKeys = new Set<string>();
   const firstKeyLocation = new Map<
     string,
     { filePath: string; line: number; column: number }
@@ -48,7 +49,27 @@ export function analyzeProject(
   const diagnostics: Diagnostic[] = [];
 
   for (const item of extractedKeys) {
-    if (item.isDynamicPrefix) {
+    if (item.isUnresolved) {
+      if (item.isDynamicPrefix && item.key) {
+        if (!seenDynamicPrefixes.has(item.key)) {
+          seenDynamicPrefixes.add(item.key);
+          dynamicPrefixes.push(item.key);
+        }
+      }
+      diagnostics.push({
+        type: "UNRESOLVED_KEY",
+        severity: "warning",
+        key: item.rawKey,
+        message: item.isDynamicPrefix
+          ? `Unresolved dynamic translation argument "${item.rawKey}"; protected namespace prefix "${item.key}*".`
+          : `Unresolved dynamic translation argument "${item.rawKey}" cannot be analyzed statically. Use --force with fix to prune anyway.`,
+        location: {
+          filePath: item.filePath,
+          line: item.line,
+          column: item.column,
+        },
+      });
+    } else if (item.isDynamicPrefix) {
       if (!seenDynamicPrefixes.has(item.key)) {
         seenDynamicPrefixes.add(item.key);
         dynamicPrefixes.push(item.key);
@@ -66,6 +87,15 @@ export function analyzeProject(
       });
     } else {
       usedKeys.add(item.key);
+      if (item.context === "*") {
+        const ctxPrefix = `${item.key}_`;
+        if (!seenDynamicPrefixes.has(ctxPrefix)) {
+          seenDynamicPrefixes.add(ctxPrefix);
+          dynamicPrefixes.push(ctxPrefix);
+        }
+      } else if (item.context) {
+        protectedContextKeys.add(`${item.key}_${item.context}`);
+      }
       if (!firstKeyLocation.has(item.key)) {
         firstKeyLocation.set(item.key, {
           filePath: item.filePath,
@@ -113,7 +143,15 @@ export function analyzeProject(
       `${mergedConfig.localesDir}/${localeCode}.json`;
 
     for (const [key, entry] of Object.entries(loc.entries)) {
-      if (isKeyUsedOrProtected(key, usedKeys, dynamicPrefixes, mergedConfig.ignoreKeys)) {
+      if (
+        isKeyUsedOrProtected(
+          key,
+          usedKeys,
+          protectedContextKeys,
+          dynamicPrefixes,
+          mergedConfig.ignoreKeys
+        )
+      ) {
         continue;
       }
 
@@ -171,7 +209,6 @@ export function analyzeProject(
         );
         if (existsInTarget) continue;
 
-        // If baseKey is a plural variant (e.g. items_one) and target has other plural variants for the same base (e.g. Arabic/Japanese plural categories), only flag if NO plural variant or exact key exists
         const pluralBase = stripPluralSuffix(baseKey);
         if (
           pluralBase &&
@@ -243,6 +280,7 @@ export function analyzeProject(
   let missingCount = 0;
   let mismatchCount = 0;
   let dynamicCount = 0;
+  let unresolvedCount = 0;
 
   for (const d of diagnostics) {
     switch (d.type) {
@@ -258,6 +296,9 @@ export function analyzeProject(
       case "DYNAMIC_KEY_DETECTED":
         dynamicCount++;
         break;
+      case "UNRESOLVED_KEY":
+        unresolvedCount++;
+        break;
     }
   }
 
@@ -271,6 +312,7 @@ export function analyzeProject(
       missingCount,
       mismatchCount,
       dynamicCount,
+      unresolvedCount,
       durationMs,
     },
     diagnostics,
@@ -280,11 +322,14 @@ export function analyzeProject(
 function isKeyUsedOrProtected(
   key: string,
   usedKeys: ReadonlySet<string>,
+  protectedContextKeys: ReadonlySet<string>,
   dynamicPrefixes: readonly string[],
   ignoreKeys: readonly string[]
 ): boolean {
   if (usedKeys.has(key)) return true;
+  if (protectedContextKeys.has(key)) return true;
   if (isPluralVariantOfUsedKey(key, usedKeys)) return true;
+  if (isPluralVariantOfUsedKey(key, protectedContextKeys)) return true;
 
   for (const prefix of dynamicPrefixes) {
     if (key.startsWith(prefix)) {
