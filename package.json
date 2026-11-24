@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.4",
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.23"
+    }
+  },
   "scripts": {
     "build": "corepack pnpm --filter @locale-lint/core run build && corepack pnpm --filter i18n-ast-lint run build",
     "test": "vitest run",
