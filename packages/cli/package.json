@@ -1,0 +1,69 @@
+{
+  "name": "i18n-ast-lint",
+  "version": "0.1.0",
+  "description": "Fast, AST-powered, zero-config i18n linter and dead-key pruner for TypeScript, React, and Next.js",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "i18n-ast-lint": "./dist/bin.mjs"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeecoding/i18n-ast-lint.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/zeecoding/i18n-ast-lint#readme",
+  "bugs": {
+    "url": "https://github.com/zeecoding/i18n-ast-lint/issues"
+  },
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "localization",
+    "linter",
+    "ast",
+    "typescript",
+    "react-i18next",
+    "next-intl",
+    "react-intl",
+    "unused-keys"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "audit:pkg": "publint --pack npm && attw --pack ."
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "jsonc-parser": "^3.3.1",
+    "tinyglobby": "^0.2.10",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@locale-lint/core": "workspace:*"
+  }
+}

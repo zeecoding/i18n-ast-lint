@@ -1,0 +1,22 @@
+{
+  "name": "locale-lint-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "corepack pnpm --filter @locale-lint/core run build && corepack pnpm --filter i18n-ast-lint run build",
+    "test": "vitest run",
+    "bench": "vitest bench",
+    "typecheck": "corepack pnpm --filter @locale-lint/core run typecheck && corepack pnpm --filter i18n-ast-lint run typecheck",
+    "audit:pkg": "corepack pnpm --filter @locale-lint/core run audit:pkg && corepack pnpm --filter i18n-ast-lint run audit:pkg"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@types/node": "^22.10.2",
+    "publint": "^0.3.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

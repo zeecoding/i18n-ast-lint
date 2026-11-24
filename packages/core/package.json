@@ -1,0 +1,48 @@
+{
+  "name": "@locale-lint/core",
+  "version": "0.1.0",
+  "description": "Pure AST-powered i18n linter and format-preserving JSON pruner engine (Node & Browser safe)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeecoding/i18n-ast-lint.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/zeecoding/i18n-ast-lint#readme",
+  "bugs": {
+    "url": "https://github.com/zeecoding/i18n-ast-lint/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "audit:pkg": "publint --pack npm && attw --pack ."
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1",
+    "typescript": "^5.7.2"
+  }
+}

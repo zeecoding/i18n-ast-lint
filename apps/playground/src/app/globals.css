@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #020617;
+  color: #f8fafc;
+}
+
+.cm-diagnostic-highlight-line {
+  background-color: rgba(244, 63, 94, 0.25) !important;
+  box-shadow: inset 3px 0 0 #f43f5e;
+}

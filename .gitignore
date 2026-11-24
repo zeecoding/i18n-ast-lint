@@ -1,0 +1,40 @@
+# Internal planning & audit docs (do not push to GitHub)
+PRD.md
+prd.md
+TRD.md
+trd.md
+pre_launch_audit.md
+prelaunch_audit.md
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# Tarballs & logs
+*.tgz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Testing & coverage
+coverage/
+.vitest/
+
+# Environment & IDE
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
