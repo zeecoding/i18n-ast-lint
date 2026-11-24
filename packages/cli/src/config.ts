@@ -24,6 +24,8 @@ const STANDARD_LOCALE_DIRS = [
   "messages",
   "src/locales",
   "src/messages",
+  "src/i18n",
+  "i18n",
   "app/locales",
 ];
 

@@ -176,7 +176,10 @@ export async function discoverWorkspaceFiles(
     }
   }
 
-  const inferredDefaultNamespace = inferDefaultNamespace(localeFiles);
+  const inferredDefaultNamespace = inferDefaultNamespace(
+    localeFiles,
+    sourceFiles
+  );
 
   return {
     sourceFiles,
@@ -188,7 +191,8 @@ export async function discoverWorkspaceFiles(
 }
 
 function inferDefaultNamespace(
-  localeFiles: readonly DiscoveredLocaleFile[]
+  localeFiles: readonly DiscoveredLocaleFile[],
+  sourceFiles: readonly DiscoveredSourceFile[]
 ): string | undefined {
   const hasUnnamespaced = localeFiles.some((f) => !f.namespace);
   if (hasUnnamespaced) {
@@ -202,6 +206,20 @@ function inferDefaultNamespace(
     }
   }
 
+  if (namespaces.size === 0) {
+    return undefined;
+  }
+
+  // 1. Check if source files explicitly define `defaultNS = 'ns1'` or `defaultNS: 'ns1'`
+  const defaultNsRegex = /\bdefaultNS\s*[:=]\s*["'`]([a-zA-Z0-9_.-]+)["'`]/;
+  for (const sf of sourceFiles) {
+    const match = defaultNsRegex.exec(sf.content);
+    if (match?.[1] && namespaces.has(match[1])) {
+      return match[1];
+    }
+  }
+
+  // 2. Standard i18next / next-i18next default namespaces
   if (namespaces.has("translation")) {
     return "translation";
   }
@@ -211,7 +229,8 @@ function inferDefaultNamespace(
   if (namespaces.has("common")) {
     return "common";
   }
-  return undefined;
+
+  return Array.from(namespaces).sort()[0];
 }
 
 /**
