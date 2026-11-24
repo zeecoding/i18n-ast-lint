@@ -78,7 +78,7 @@ export function CodeEditor({
   }, [highlightedLine, value]);
 
   return (
-    <div className="h-full w-full overflow-auto text-sm">
+    <div className="h-full w-full overflow-auto bg-[#0B0E14] text-[13px]">
       <CodeMirror
         ref={editorRef}
         value={value}
