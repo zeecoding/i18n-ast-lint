@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -16,9 +20,25 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@zeecoding"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm audit:pkg
       - run: pnpm --filter @locale-lint/playground run build
+      - name: Publish to GitHub Packages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.name = "@zeecoding/i18n-ast-lint";
+            pkg.publishConfig = { registry: "https://npm.pkg.github.com" };
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2));
+          '
+          npm publish --ignore-scripts || true
