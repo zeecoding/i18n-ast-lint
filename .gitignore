@@ -5,6 +5,16 @@ TRD.md
 trd.md
 pre_launch_audit.md
 prelaunch_audit.md
+PRODUCT.md
+Product.md
+product.md
+DESIGN.md
+Design.md
+design.md
+**/PRODUCT.md
+**/DESIGN.md
+.impeccable/
+.github/
 
 # Dependencies
 node_modules/
