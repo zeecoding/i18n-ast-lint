@@ -79,6 +79,7 @@ export async function runCheck(
     const fileKeys = scanSource(sf.content, sf.filePath, {
       namespaceSeparator: config.namespaceSeparator,
       keySeparator: config.keySeparator,
+      defaultNamespace: workspace.inferredDefaultNamespace,
     });
     extractedKeys.push(...fileKeys);
   }
@@ -121,6 +122,7 @@ export async function runFix(
     const fileKeys = scanSource(sf.content, sf.filePath, {
       namespaceSeparator: config.namespaceSeparator,
       keySeparator: config.keySeparator,
+      defaultNamespace: workspace.inferredDefaultNamespace,
     });
     extractedKeys.push(...fileKeys);
   }

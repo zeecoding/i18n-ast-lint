@@ -27,6 +27,7 @@ export interface DiscoveredWorkspace {
   localeFiles: DiscoveredLocaleFile[];
   localeMap: LocaleMap;
   localeFilePaths: Record<string, string>;
+  inferredDefaultNamespace?: string;
 }
 
 const SOURCE_IGNORE_PATTERNS = [
@@ -175,12 +176,42 @@ export async function discoverWorkspaceFiles(
     }
   }
 
+  const inferredDefaultNamespace = inferDefaultNamespace(localeFiles);
+
   return {
     sourceFiles,
     localeFiles,
     localeMap,
     localeFilePaths,
+    inferredDefaultNamespace,
   };
+}
+
+function inferDefaultNamespace(
+  localeFiles: readonly DiscoveredLocaleFile[]
+): string | undefined {
+  const hasUnnamespaced = localeFiles.some((f) => !f.namespace);
+  if (hasUnnamespaced) {
+    return undefined;
+  }
+
+  const namespaces = new Set<string>();
+  for (const f of localeFiles) {
+    if (f.namespace) {
+      namespaces.add(f.namespace);
+    }
+  }
+
+  if (namespaces.has("translation")) {
+    return "translation";
+  }
+  if (namespaces.size === 1) {
+    return Array.from(namespaces)[0];
+  }
+  if (namespaces.has("common")) {
+    return "common";
+  }
+  return undefined;
 }
 
 /**
