@@ -2,11 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/i18n-ast-lint.svg)](https://www.npmjs.com/package/i18n-ast-lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Interactive Playground](https://img.shields.io/badge/Playground-Try%20Live%20in%20Browser-10B981)](https://i18n-ast-lint-4mswh1pym-zeecodings-projects.vercel.app/)
+[![Interactive Playground](https://img.shields.io/badge/Playground-Try%20Live%20in%20Browser-10B981)](https://i18n-ast-lint-zeta.vercel.app/)
 
 **Zero-config TypeScript AST i18n linter and format-preserving JSON dead-key pruner for `react-i18next`, `next-intl`, and `react-intl`.**
 
-[**Try the Live Interactive AST Workbench →**](https://i18n-ast-lint-4mswh1pym-zeecodings-projects.vercel.app/)
+[**Try the Live Interactive AST Workbench →**](https://i18n-ast-lint-zeta.vercel.app/)
 
 `i18n-ast-lint` parses your `.ts`, `.tsx`, `.js`, and `.jsx` files with the official TypeScript Compiler AST (`ts.createSourceFile`) and edits locale JSON files surgically with `jsonc-parser`. It catches unused translation keys, missing locale entries, and `{variable}` / `{{variable}}` interpolation mismatches across locales—and refuses to delete keys when a dynamic `t(expr)` call cannot be statically proven safe.
 

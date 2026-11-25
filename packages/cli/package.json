@@ -32,7 +32,7 @@
     "url": "git+https://github.com/zeecoding/i18n-ast-lint.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/zeecoding/i18n-ast-lint#readme",
+  "homepage": "https://i18n-ast-lint-zeta.vercel.app/",
   "bugs": {
     "url": "https://github.com/zeecoding/i18n-ast-lint/issues"
   },
