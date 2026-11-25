@@ -2,55 +2,92 @@
 
 [![npm version](https://img.shields.io/npm/v/i18n-ast-lint.svg)](https://www.npmjs.com/package/i18n-ast-lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Interactive Playground](https://img.shields.io/badge/Playground-Try%20Live%20in%20Browser-10B981)](https://i18n-ast-lint-4mswh1pym-zeecodings-projects.vercel.app/)
 
 **Zero-config TypeScript AST i18n linter and format-preserving JSON dead-key pruner for `react-i18next`, `next-intl`, and `react-intl`.**
+
+[**Try the Live Interactive AST Workbench →**](https://i18n-ast-lint-4mswh1pym-zeecodings-projects.vercel.app/)
 
 `i18n-ast-lint` parses your `.ts`, `.tsx`, `.js`, and `.jsx` files with the official TypeScript Compiler AST (`ts.createSourceFile`) and edits locale JSON files surgically with `jsonc-parser`. It catches unused translation keys, missing locale entries, and `{variable}` / `{{variable}}` interpolation mismatches across locales—and refuses to delete keys when a dynamic `t(expr)` call cannot be statically proven safe.
 
 ---
 
-## Quickstart
+## Installation & Quickstart
 
-Run in any React, Next.js, or TypeScript project with zero configuration:
+Run directly with `npx` (zero configuration required), or install as a dev dependency:
 
 ```bash
-# 1. Scan source files and locale JSON files for unused, missing, or mismatched keys
+# Run directly without installing
 npx i18n-ast-lint check
 
-# 2. Run in CI mode (strips ANSI colors, exits 1 on any error or warning)
-npx i18n-ast-lint check --ci
-
-# 3. Preview dead keys that would be removed without writing to disk
-npx i18n-ast-lint fix --dry-run
-
-# 4. Surgically prune unused keys while preserving JSON indentation and key order
-npx i18n-ast-lint fix
+# Or install in your project
+npm install -D i18n-ast-lint
+pnpm add -D i18n-ast-lint
+yarn add -D i18n-ast-lint
+bun add -D i18n-ast-lint
 ```
 
 ---
 
-## Why `i18n-ast-lint`?
+## All CLI Commands
 
-Most teams either rely on regex scanners (`i18n-unused`) that break on modern React/Next.js syntax, or stitch together separate tools for key extraction, cross-locale interpolation checking, and JSON cleanup.
+```bash
+# 1. Default check — auto-detects source (src, app, pages, components) and locales (locales, public/locales, messages, src/i18n)
+npx i18n-ast-lint check
 
-| Capability | `i18n-ast-lint` | `i18n-unused` (Regex) |
+# 2. CI gate mode — strips ANSI colors and exits with code 1 on any error or warning
+npx i18n-ast-lint check --ci
+
+# 3. JSON output mode — prints structured JSON report to stdout for custom tooling
+npx i18n-ast-lint check --json
+
+# 4. Custom paths & base locale override
+npx i18n-ast-lint check --locales public/locales --src src,app --base en
+
+# 5. Custom configuration file path (.json, .mjs, or .js)
+npx i18n-ast-lint check --config ./i18n-ast-lint.config.json
+
+# 6. Dry-run fix — preview exact unused keys and files that would be pruned without modifying disk
+npx i18n-ast-lint fix --dry-run
+
+# 7. Format-preserving fix — surgically remove unused keys and empty parent objects from locale JSON files
+npx i18n-ast-lint fix
+
+# 8. Force fix — prune unused keys even when unscoped dynamic t(variable) calls exist
+npx i18n-ast-lint fix --force
+
+# 9. JSON summary of pruned files
+npx i18n-ast-lint fix --json
+
+# 10. Display help and version
+npx i18n-ast-lint --help
+npx i18n-ast-lint --version
+```
+
+---
+
+## Why TypeScript AST vs. Regex Linters?
+
+Most teams either rely on regular-expression scanners that break on modern React and Next.js patterns, or stitch together separate tools for key extraction, cross-locale interpolation checking, and JSON cleanup.
+
+| Capability | `i18n-ast-lint` (TypeScript AST) | Regex-Based Linters |
 | :--- | :--- | :--- |
-| **Multi-Framework AST Engine** | `react-i18next`, `next-intl`, and `react-intl` (`FormatJS`) in one tool | Regex pattern matching |
-| **Scoped Hooks & `keyPrefix`** | `useTranslation('auth', { keyPrefix: 'form' })`, aliased `{ t: tAuth }` | Misses lexical scope (Issue #18) |
-| **`next-intl` Client & Server** | `useTranslations('Ns')`, `getTranslations({ namespace })`, `t.rich()`, `t.markup()`, `t.raw()` | Requires manual regex rules |
-| **`react-intl` Descriptors** | `<FormattedMessage id>`, `intl.formatMessage({ id })`, `defineMessages({...})` | Partial regex support |
-| **JSX `<Trans>` Components** | Multi-line `<Trans i18nKey="..." ns="...">` and JSX expressions | Fails on multi-line JSX (Issue #34) |
+| **Multi-Framework Engine** | `react-i18next`, `next-intl`, and `react-intl` (`FormatJS`) in one tool | Regex pattern matching |
+| **Scoped Hooks & `keyPrefix`** | Resolves `useTranslation('auth', { keyPrefix: 'form' })` and aliased `{ t: tAuth }` | Cannot track lexical scope across functions |
+| **`next-intl` Client & Server** | Resolves `useTranslations('Ns')`, `getTranslations({ namespace })`, `t.rich()`, `t.markup()`, `t.raw()` | Requires manual regex workarounds |
+| **`react-intl` Descriptors** | Extracts `<FormattedMessage id>`, `intl.formatMessage({ id })`, and `defineMessages({...})` | Partial regex support |
+| **JSX `<Trans>` Components** | Extracts multi-line `<Trans i18nKey="..." ns="...">` and JSX expressions | Line-based regex misses multi-line JSX attributes |
 | **Constants, Ternaries & Arrays** | Resolves `const k = 'a'; t(k)`, `t(cond ? 'a' : 'b')`, and `t(['a', 'b'])` | Flags active keys as unused |
-| **Dynamic Prefix Protection** | ``t(`errors.${code}`)`` auto-protects `errors.*` from pruning | Deletes live dynamic keys |
-| **Plurals & Context Suffixes** | Links `_zero`, `_one`, `_other` and `t('friend', { context: 'male' })` (`friend_male`) | Flags variants as unused |
-| **Comments & URLs (`https://...`)** | AST ignores `//` and `/* */`; URLs in strings never corrupt scanning | Corrupts strings after `https://` (Issue #42) |
+| **Dynamic Prefix Protection** | ``t(`errors.${code}`)`` automatically protects all `errors.*` keys from pruning | Deletes live dynamic keys |
+| **Plurals & Context Suffixes** | Links `_zero`, `_one`, `_other` and `t('friend', { context: 'male' })` (`friend_male`) | Flags plural and context variants as unused |
+| **Comments & URLs (`https://...`)** | Compiler tokenizer ignores `//` and `/* */`; URLs in strings never corrupt scanning | Comment-stripping regex corrupts strings containing `https://` |
 | **Unresolved Call Safety Guard** | Emits `UNRESOLVED_KEY` on opaque `t(fn())` calls and blocks `fix` unless `--force` is passed | Silently deletes keys |
-| **Format-Preserving `fix`** | `jsonc-parser` edits preserve 2/4/tab indentation, sibling order, and literal-dot keys | `JSON.stringify` rewrites whole file |
+| **Format-Preserving `fix`** | `jsonc-parser` edits preserve 2/4/tab indentation, sibling order, and literal-dot keys | `JSON.stringify` rewrites entire file formatting |
 | **Cross-Locale Interpolation Check** | Validates both `{{var}}` (i18next) and `{var}` / `{count, plural, ...}` (ICU) | Not supported |
 
 ---
 
-## What the AST Scanner Resolves
+## Supported Frameworks & Patterns
 
 ### 1. `react-i18next` / `i18next`
 ```tsx
@@ -157,14 +194,7 @@ If your codebase passes an opaque runtime expression to `t(getDynamicKey())` whe
 
 ---
 
-## CLI Reference
-
-### Commands
-
-| Command | Description |
-| :--- | :--- |
-| `i18n-ast-lint check` | Scans source files and locale JSON files, printing grouped diagnostics. |
-| `i18n-ast-lint fix` | Surgically removes `UNUSED_KEY` entries and empty parent objects from locale JSON files. |
+## CLI Options & Exit Codes
 
 ### Options
 
@@ -175,7 +205,7 @@ If your codebase passes an opaque runtime expression to `t(getDynamicKey())` whe
 | `--dry-run` | Used with `fix` to preview which keys and files would be pruned without modifying disk. |
 | `--force` | Used with `fix` to proceed with pruning even if unscoped `UNRESOLVED_KEY` warnings exist. |
 | `--config <path>` | Explicit path to `i18n-ast-lint.config.json`, `.mjs`, or `.js`. |
-| `--locales <dir>` | Override auto-detected locales directory (`locales`, `public/locales`, `messages`, `src/locales`). |
+| `--locales <dir>` | Override auto-detected locales directory (`locales`, `public/locales`, `messages`, `src/locales`, `src/i18n`). |
 | `--src <dirs>` | Comma-separated source directories to scan (`src`, `app`, `pages`, `components`). |
 | `--base <locale>` | Base locale code to compare target locales against (default: `"en"`). |
 
@@ -191,7 +221,7 @@ If your codebase passes an opaque runtime expression to `t(getDynamicKey())` whe
 
 ## Configuration (Optional)
 
-`i18n-ast-lint` works out of the box for both flat (`locales/en.json`) and namespaced (`public/locales/en/auth.json`) directory structures. To customize rules, create `i18n-ast-lint.config.json` (or `i18n-ast-lint.config.mjs`):
+`i18n-ast-lint` works out of the box for both flat (`locales/en.json`, `messages/en.json`) and namespaced (`public/locales/en/auth.json`, `src/i18n/en/ns1.json`) directory structures. To customize rules, create `i18n-ast-lint.config.json` (or `i18n-ast-lint.config.mjs`):
 
 ```json
 {

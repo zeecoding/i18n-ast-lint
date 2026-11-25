@@ -83,23 +83,23 @@ jobs:
 const ADVERSARIAL_MATRIX = [
   {
     capability: "Lexical Hook Scope (useTranslation / useTranslations)",
-    astResult: "Tracks nested function bindings & aliased { t: tAuth }",
-    regexFailure: "i18n-unused Issue #18 — namespace collision",
+    astResult: "Tracks nested function bindings, keyPrefix & aliased { t: tAuth }",
+    regexFailure: "Cannot track lexical variable bindings across functions",
   },
   {
     capability: "Multi-line JSX (<Trans i18nKey> & <FormattedMessage>)",
     astResult: "Extracts JsxOpeningElement & JsxExpression attributes",
-    regexFailure: "i18n-unused Issue #34 — misses multi-line JSX",
+    regexFailure: "Line-based regex misses multi-line JSX attributes",
   },
   {
     capability: "Comments & URLs (https://example.com)",
     astResult: "Compiler tokenizer ignores comments & preserves URLs",
-    regexFailure: "i18n-unused Issue #42 — comment regex strips URLs",
+    regexFailure: "Naive // comment stripping corrupts string literals with URLs",
   },
   {
     capability: "Dynamic Template Prefix (t(`errors.${code}`))",
     astResult: "Emits DYNAMIC_KEY_DETECTED & protects errors.*",
-    regexFailure: "Deletes live dynamic keys during --fix",
+    regexFailure: "Flags dynamic keys as unused and deletes them during fix",
   },
   {
     capability: "Surgical JSON Pruning (jsonc-parser)",
@@ -109,7 +109,7 @@ const ADVERSARIAL_MATRIX = [
   {
     capability: "500-File Synthetic TSX Benchmark (1,500 keys)",
     astResult: "178.04 ms mean scan + diff (5.62 ops/sec, Vitest Bench)",
-    regexFailure: "No interpolation check or CI exit code gate (#43)",
+    regexFailure: "No cross-locale interpolation check or CI exit code gate",
   },
 ] as const;
 
@@ -205,11 +205,11 @@ export function CIExport() {
                 Compiler AST vs. Regex Verification Matrix
               </h2>
               <p className="mt-0.5 text-xs text-[#A3B1C6]">
-                Verified against <code className="font-mono text-[#F4F6F8]">i18n-unused</code> production failure cases
+                Static analysis capabilities verified across real-world React & Next.js patterns
               </p>
             </div>
             <span className="rounded-[4px] border border-[#263042] bg-[#0B0E14] px-2 py-0.5 font-mono text-[11px] tabular-nums text-[#A3B1C6]">
-              22/22 tests passing
+              25/25 tests passing
             </span>
           </div>
 
